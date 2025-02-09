@@ -1,65 +1,187 @@
 -- 📌 Chargement de Rayfield UI
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
+-- 📌 Vérification du bon chargement de Rayfield
 if not Rayfield then
-    warn("❌ Rayfield UI n'a pas pu être chargé !")
+    warn("Rayfield UI n'a pas pu être chargé !")
     return
 end
-print("✅ Rayfield UI chargé avec succès !")
 
 -- 📌 Création de la fenêtre principale
 local Window = Rayfield:CreateWindow({
     Name = "Rivals Aimbot",
     LoadingTitle = "Rivals Aimbot v1.0",
     LoadingSubtitle = "By azfasty",
-    Theme = "Dark",
+    Theme = "DarkBlue",  
     ConfigurationSaving = {Enabled = false}
 })
 
--- 📌 Création de l'onglet Aimbot
-local AimbotTab = Window:CreateTab("Aimbot", "crosshair") 
-local AimbotSection = AimbotTab:CreateSection("Aimbot Settings") 
+-- 🔹 Variables
+local aimlock = false
+local drawFOV = false
+local aimSmoothness = 5
+local aimFOV = 100
+local triggerbotEnabled = false
+local magicBulletEnabled = false
 
-local Toggle = AimbotTab:CreateToggle({
-   Name = "Toggle Example",
-   CurrentValue = false,
-   Flag = "Toggle1", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
-   Callback = function(Value)
-   -- The function that takes place when the toggle is pressed
-   -- The variable (Value) is a boolean on whether the toggle is true or false
-   end,
-})
+local espEnabled = false
+local boxEnabled = false
+local filledBoxEnabled = false
+local boneEnabled = false
+local lineEnabled = false
+local nameEnabled = false
 
--- ✅ Toggle Draw FOV
-local FOVToggle = AimbotSection:CreateToggle({
-    Name = "Draw FOV",
+local fovColor = Color3.fromRGB(255, 255, 255)
+local boneColor = Color3.fromRGB(255, 0, 0)
+
+-- 📌 Onglet AIMBOT
+local AimbotTab = Window:CreateTab("Aimbot", "crosshair")
+local AimbotSection = AimbotTab:CreateSection("Aimbot Settings")
+
+AimbotTab:CreateToggle({
+    Name = "Enable Aimbot",
     CurrentValue = false,
-    Flag = "DrawFOV",
     Callback = function(state)
-        print("FOV activé :", state)
+        aimlock = state
     end
 })
 
--- ✅ Slider pour régler la taille du FOV
-local FOVSlider = AimbotSection:CreateSlider({
+AimbotTab:CreateToggle({
+    Name = "Draw FOV",
+    CurrentValue = false,
+    Callback = function(state)
+        drawFOV = state
+    end
+})
+
+AimbotTab:CreateSlider({
     Name = "FOV Size",
     Range = {50, 300},
     Increment = 5,
-    CurrentValue = 100,
-    Flag = "FOVSize",
+    CurrentValue = aimFOV,
     Callback = function(value)
-        print("FOV Size :", value)
+        aimFOV = value
     end
 })
 
--- ✅ Color Picker pour changer la couleur du FOV
-local FOVColorPicker = AimbotSection:CreateColorPicker({
+AimbotTab:CreateSlider({
+    Name = "Smoothness",
+    Range = {1, 20},
+    Increment = 1,
+    CurrentValue = aimSmoothness,
+    Callback = function(value)
+        aimSmoothness = value
+    end
+})
+
+AimbotTab:CreateColorPicker({
     Name = "FOV Color",
-    Color = Color3.fromRGB(255, 255, 255),
-    Flag = "FOVColor",
+    Color = fovColor,
     Callback = function(color)
-        print("FOV Color changé :", color)
+        fovColor = color
     end
 })
 
-print("🔥 Aimbot & ESP chargés avec Rayfield !")
+-- 📌 Onglet ESP
+local EspTab = Window:CreateTab("ESP", "eye")
+local EspSection = EspTab:CreateSection("ESP Settings")
+
+EspSection:CreateToggle({
+    Name = "Enable ESP",
+    CurrentValue = false,
+    Callback = function(state)
+        espEnabled = state
+    end
+})
+
+EspSection:CreateToggle({
+    Name = "Box ESP",
+    CurrentValue = false,
+    Callback = function(state)
+        boxEnabled = state
+    end
+})
+
+EspSection:CreateToggle({
+    Name = "Filled Box",
+    CurrentValue = false,
+    Callback = function(state)
+        filledBoxEnabled = state
+    end
+})
+
+EspSection:CreateToggle({
+    Name = "Bone ESP",
+    CurrentValue = false,
+    Callback = function(state)
+        boneEnabled = state
+    end
+})
+
+EspSection:CreateColorPicker({
+    Name = "Bone Color",
+    Color = boneColor,
+    Callback = function(color)
+        boneColor = color
+    end
+})
+
+-- 🎯 Fonction Aimbot
+local function getClosestTarget()
+    local closestTarget = nil
+    local shortestDistance = aimFOV
+
+    for _, player in pairs(game:GetService("Players"):GetPlayers()) do
+        if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
+            local headPosition, onScreen = workspace.CurrentCamera:WorldToViewportPoint(player.Character.Head.Position)
+            local screenCenter = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
+            local distance = (Vector2.new(headPosition.X, headPosition.Y) - screenCenter).Magnitude
+
+            if distance < shortestDistance then
+                closestTarget = player
+                shortestDistance = distance
+            end
+        end
+    end
+
+    return closestTarget
+end
+
+-- 🔥 Aimbot Loop
+game:GetService("RunService").RenderStepped:Connect(function()
+    if aimlock then
+        local target = getClosestTarget()
+        if target and target.Character and target.Character:FindFirstChild("Head") then
+            local headPosition = workspace.CurrentCamera:WorldToViewportPoint(target.Character.Head.Position)
+            local screenCenter = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
+
+            local newMousePos = Vector2.new(
+                screenCenter.X + (headPosition.X - screenCenter.X) / aimSmoothness,
+                screenCenter.Y + (headPosition.Y - screenCenter.Y) / aimSmoothness
+            )
+
+            mousemoverel(newMousePos.X - screenCenter.X, newMousePos.Y - screenCenter.Y)
+        end
+    end
+end)
+
+-- 🎯 FOV Drawing
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Thickness = 2
+FOVCircle.NumSides = 50
+FOVCircle.Filled = false
+FOVCircle.Transparency = 1
+
+game:GetService("RunService").RenderStepped:Connect(function()
+    if drawFOV then
+        FOVCircle.Color = fovColor
+        FOVCircle.Position = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
+        FOVCircle.Radius = aimFOV
+        FOVCircle.Visible = true
+    else
+        FOVCircle.Visible = false
+    end
+end)
+
+-- ✅ Vérification du bon chargement
+print("🔥 Aimbot & ESP chargés avec Rayfield UI !")
