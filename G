@@ -9,214 +9,67 @@ print("✅ Rayfield UI chargé avec succès !")
 
 -- 📌 Création de la fenêtre principale
 local Window = Rayfield:CreateWindow({
-    Name = "Rivals Aimbot",
-    LoadingTitle = "Rivals Aimbot v1.0",
+    Name = "Emergency Hamburg",
+    LoadingTitle = "Hamburg Script v1.0",
     LoadingSubtitle = "By azfasty",
     Theme = "Dark",
-    ConfigurationSaving = {Enabled = true, FolderName = "RivalsConfig", FileName = "AimbotSettings"}
+    ConfigurationSaving = {Enabled = false}
 })
 
--- 🔹 Variables Aimbot & ESP
-local aimlock = false
-local drawFOV = false
-local aimSmoothness = 5
-local aimFOV = 100
-local triggerbotEnabled = false
-local magicBulletEnabled = false
+-- 📌 Onglet Véhicule
+local VehicleTab = Window:CreateTab("Véhicule", "car")
+local VehicleSection = VehicleTab:CreateSection("Paramètres Véhicule")
 
-local espEnabled = false
-local boxEnabled = false
-local filledBoxEnabled = false
-local boneEnabled = false
-local lineEnabled = false
-local nameEnabled = false
+-- 🔹 Variables
+local speedBoostEnabled = false
+local boostMultiplier = 2  -- Par défaut, double la vitesse
 
-local fovColor = Color3.fromRGB(255, 255, 255)
-local boneColor = Color3.fromRGB(255, 0, 0)
-
--- 📌 Onglet AIMBOT
-local AimbotTab = Window:CreateTab("Aimbot", "crosshair")
-
-AimbotTab:CreateToggle({
-    Name = "Enable Aimbot",
+-- ✅ Toggle pour activer/désactiver le Speed Boost
+VehicleTab:CreateToggle({
+    Name = "Activer Speed Boost",
     CurrentValue = false,
-    Flag = "Aimbot",
+    Flag = "SpeedBoost",
     Callback = function(state)
-        aimlock = state
+        speedBoostEnabled = state
     end
 })
 
-AimbotTab:CreateToggle({
-    Name = "Draw FOV",
-    CurrentValue = false,
-    Flag = "DrawFOV",
-    Callback = function(state)
-        drawFOV = state
-    end
-})
-
-AimbotTab:CreateSlider({
-    Name = "FOV Size",
-    Range = {50, 300},
-    Increment = 5,
-    CurrentValue = aimFOV,
-    Flag = "FOVSize",
+-- ✅ Slider pour régler la puissance du boost
+VehicleTab:CreateSlider({
+    Name = "Puissance du Boost",
+    Range = {1, 5},  -- De x1 à x5
+    Increment = 0.5,
+    CurrentValue = boostMultiplier,
+    Flag = "BoostMultiplier",
     Callback = function(value)
-        aimFOV = value
+        boostMultiplier = value
     end
 })
 
-AimbotTab:CreateSlider({
-    Name = "Smoothness",
-    Range = {1, 20},
-    Increment = 1,
-    CurrentValue = aimSmoothness,
-    Flag = "Smoothness",
-    Callback = function(value)
-        aimSmoothness = value
-    end
-})
-
-AimbotTab:CreateColorPicker({
-    Name = "FOV Color",
-    Color = fovColor,
-    Flag = "FOVColor",
-    Callback = function(color)
-        fovColor = color
-    end
-})
-
-AimbotTab:CreateToggle({
-    Name = "Enable Triggerbot",
-    CurrentValue = false,
-    Flag = "Triggerbot",
-    Callback = function(state)
-        triggerbotEnabled = state
-    end
-})
-
-AimbotTab:CreateToggle({
-    Name = "Enable Magic Bullet",
-    CurrentValue = false,
-    Flag = "MagicBullet",
-    Callback = function(state)
-        magicBulletEnabled = state
-    end
-})
-
--- 📌 Onglet ESP
-local EspTab = Window:CreateTab("ESP", "eye")
-
-EspTab:CreateToggle({
-    Name = "Enable ESP",
-    CurrentValue = false,
-    Flag = "EnableESP",
-    Callback = function(state)
-        espEnabled = state
-    end
-})
-
-EspTab:CreateToggle({
-    Name = "Box ESP",
-    CurrentValue = false,
-    Flag = "BoxESP",
-    Callback = function(state)
-        boxEnabled = state
-    end
-})
-
-EspTab:CreateToggle({
-    Name = "Filled Box",
-    CurrentValue = false,
-    Flag = "FilledBoxESP",
-    Callback = function(state)
-        filledBoxEnabled = state
-    end
-})
-
-EspTab:CreateToggle({
-    Name = "Bone ESP",
-    CurrentValue = false,
-    Flag = "BoneESP",
-    Callback = function(state)
-        boneEnabled = state
-    end
-})
-
-EspTab:CreateToggle({
-    Name = "Line ESP",
-    CurrentValue = false,
-    Flag = "LineESP",
-    Callback = function(state)
-        lineEnabled = state
-    end
-})
-
-EspTab:CreateColorPicker({
-    Name = "Bone Color",
-    Color = boneColor,
-    Flag = "BoneColor",
-    Callback = function(color)
-        boneColor = color
-    end
-})
-
--- 🎯 Aimbot Function
-local function getClosestTarget()
-    local closestTarget = nil
-    local shortestDistance = aimFOV
-
-    for _, player in pairs(game:GetService("Players"):GetPlayers()) do
-        if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
-            local headPosition, onScreen = workspace.CurrentCamera:WorldToViewportPoint(player.Character.Head.Position)
-            local screenCenter = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
-            local distance = (Vector2.new(headPosition.X, headPosition.Y) - screenCenter).Magnitude
-
-            if distance < shortestDistance then
-                closestTarget = player
-                shortestDistance = distance
+-- 🎯 Fonction pour appliquer le Speed Boost
+local function applySpeedBoost()
+    while true do
+        if speedBoostEnabled then
+            local vehicle = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character.Parent
+            if vehicle and vehicle:FindFirstChild("Humanoid") and vehicle:FindFirstChild("VehicleSeat") then
+                local seat = vehicle.VehicleSeat
+                seat.Throttle = 1  -- Accélération maximale
+                
+                -- Augmenter la vitesse du véhicule
+                if seat:FindFirstChild("Engine") then
+                    local engine = seat.Engine
+                    if engine:FindFirstChild("Torque") then
+                        engine.Torque.Value = engine.Torque.Value * boostMultiplier
+                    end
+                end
             end
         end
+        wait(0.1)
     end
-
-    return closestTarget
 end
 
--- 🔥 Aimbot Loop
-game:GetService("RunService").RenderStepped:Connect(function()
-    if aimlock then
-        local target = getClosestTarget()
-        if target and target.Character and target.Character:FindFirstChild("Head") then
-            local headPosition = workspace.CurrentCamera:WorldToViewportPoint(target.Character.Head.Position)
-            local screenCenter = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
-
-            local newMousePos = Vector2.new(
-                screenCenter.X + (headPosition.X - screenCenter.X) / aimSmoothness,
-                screenCenter.Y + (headPosition.Y - screenCenter.Y) / aimSmoothness
-            )
-
-            mousemoverel(newMousePos.X - screenCenter.X, newMousePos.Y - screenCenter.Y)
-        end
-    end
-end)
-
--- 🎯 FOV Drawing
-local FOVCircle = Drawing.new("Circle")
-FOVCircle.Thickness = 2
-FOVCircle.NumSides = 50
-FOVCircle.Filled = false
-FOVCircle.Transparency = 1
-
-game:GetService("RunService").RenderStepped:Connect(function()
-    if drawFOV then
-        FOVCircle.Color = fovColor
-        FOVCircle.Position = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
-        FOVCircle.Radius = aimFOV
-        FOVCircle.Visible = true
-    else
-        FOVCircle.Visible = false
-    end
-end)
+-- 🔥 Lancer le Speed Boost en arrière-plan
+spawn(applySpeedBoost)
 
 -- ✅ Vérification du bon chargement
-print("🔥 Aimbot & ESP chargés avec Rayfield UI !")
+print("🔥 Speed Boost pour voiture chargé avec succès !")
