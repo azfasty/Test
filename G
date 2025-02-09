@@ -1,7 +1,6 @@
 -- 📌 Chargement de Rayfield UI
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
--- 📌 Vérification du chargement de Rayfield
 if not Rayfield then
     warn("❌ Rayfield UI n'a pas pu être chargé !")
     return
@@ -13,16 +12,17 @@ local Window = Rayfield:CreateWindow({
     Name = "Rivals Aimbot",
     LoadingTitle = "Rivals Aimbot v1.0",
     LoadingSubtitle = "By azfasty",
-    Theme = "Default",  
+    Theme = "Dark",  
     ConfigurationSaving = {Enabled = false}
 })
 
 -- 📌 Création de l'onglet Aimbot
-local AimbotTab = Window:CreateTab("Aimbot", "crosshair") -- ✅ Onglet créé correctement
-local AimbotSection = AimbotTab:CreateSection("Aimbot Settings") -- ✅ Section créée correctement
+local AimbotTab = Window:CreateTab("Aimbot", "crosshair")
+local AimbotSection = AimbotTab:CreateSection("Aimbot Settings")
 
--- ✅ Correction du Toggle (Aimbot)
-local AimbotToggle = AimbotSection:CreateToggle({
+-- ✅ Correction de `CreateToggle()` en stockant la variable avant de l’appeler
+local AimbotToggle
+AimbotToggle = AimbotSection.CreateToggle(AimbotSection, {
     Name = "Enable Aimbot",
     CurrentValue = false,
     Flag = "Aimbot",
@@ -31,8 +31,8 @@ local AimbotToggle = AimbotSection:CreateToggle({
     end
 })
 
--- ✅ Correction du Toggle (Draw FOV)
-local FOVToggle = AimbotSection:CreateToggle({
+local FOVToggle
+FOVToggle = AimbotSection.CreateToggle(AimbotSection, {
     Name = "Draw FOV",
     CurrentValue = false,
     Flag = "DrawFOV",
@@ -41,27 +41,4 @@ local FOVToggle = AimbotSection:CreateToggle({
     end
 })
 
--- ✅ Ajout d'un slider pour le FOV
-local FOVSlider = AimbotSection:CreateSlider({
-    Name = "FOV Size",
-    Range = {50, 300},
-    Increment = 5,
-    CurrentValue = 100,
-    Flag = "FOVSize",
-    Callback = function(value)
-        print("FOV Size :", value)
-    end
-})
-
--- ✅ Ajout d'un Color Picker pour le FOV
-local FOVColorPicker = AimbotSection:CreateColorPicker({
-    Name = "FOV Color",
-    Color = Color3.fromRGB(255, 255, 255),
-    Flag = "FOVColor",
-    Callback = function(color)
-        print("FOV Color changé :", color)
-    end
-})
-
--- 📌 Vérification finale
-print("🔥 Menu Aimbot & ESP bien chargé dans Rayfield !")
+print("🔥 Aimbot & ESP chargés avec Rayfield !")
