@@ -1,13 +1,22 @@
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
+-- 📌 Chargement de Rayfield UI
+local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
-local localPlayer = Players.LocalPlayer
-local camera = Workspace.CurrentCamera
+-- 📌 Vérification du bon chargement de Rayfield
+if not Rayfield then
+    warn("Rayfield UI n'a pas pu être chargé !")
+    return
+end
 
--- 🔹 Variables Aimbot & ESP
+-- 📌 Création de la fenêtre principale
+local Window = Rayfield:CreateWindow({
+    Name = "Rivals Aimbot",
+    LoadingTitle = "Rivals Aimbot v1.0",
+    LoadingSubtitle = "By azfasty",
+    Theme = "Dark",  
+    ConfigurationSaving = {Enabled = false}
+})
+
+-- 🔹 Variables
 local aimlock = false
 local drawFOV = false
 local aimSmoothness = 5
@@ -25,23 +34,13 @@ local nameEnabled = false
 local fovColor = Color3.fromRGB(255, 255, 255)
 local boneColor = Color3.fromRGB(255, 0, 0)
 
--- 🔹 Création du menu Rayfield
-local Window = Rayfield:CreateWindow({
-    Name = "Rivals Aimbot",
-    LoadingTitle = "Rivals Aimbot v1.0",
-    LoadingSubtitle = "By azfasty",
-    Theme = "Dark",
-    ConfigurationSaving = {Enabled = false}
-})
-
--- 📌 Onglet Aimbot
+-- 📌 Onglet AIMBOT
 local AimbotTab = Window:CreateTab("Aimbot", "crosshair")
 local AimbotSection = AimbotTab:CreateSection("Aimbot Settings")
 
 AimbotSection:CreateToggle({
     Name = "Enable Aimbot",
     CurrentValue = false,
-    Flag = "Aimbot",
     Callback = function(state)
         aimlock = state
     end
@@ -50,7 +49,6 @@ AimbotSection:CreateToggle({
 AimbotSection:CreateToggle({
     Name = "Draw FOV",
     CurrentValue = false,
-    Flag = "DrawFOV",
     Callback = function(state)
         drawFOV = state
     end
@@ -61,7 +59,6 @@ AimbotSection:CreateSlider({
     Range = {50, 300},
     Increment = 5,
     CurrentValue = aimFOV,
-    Flag = "FOVSize",
     Callback = function(value)
         aimFOV = value
     end
@@ -72,7 +69,6 @@ AimbotSection:CreateSlider({
     Range = {1, 20},
     Increment = 1,
     CurrentValue = aimSmoothness,
-    Flag = "Smoothness",
     Callback = function(value)
         aimSmoothness = value
     end
@@ -81,7 +77,6 @@ AimbotSection:CreateSlider({
 AimbotSection:CreateColorPicker({
     Name = "FOV Color",
     Color = fovColor,
-    Flag = "FOVColor",
     Callback = function(color)
         fovColor = color
     end
@@ -94,7 +89,6 @@ local EspSection = EspTab:CreateSection("ESP Settings")
 EspSection:CreateToggle({
     Name = "Enable ESP",
     CurrentValue = false,
-    Flag = "EnableESP",
     Callback = function(state)
         espEnabled = state
     end
@@ -103,7 +97,6 @@ EspSection:CreateToggle({
 EspSection:CreateToggle({
     Name = "Box ESP",
     CurrentValue = false,
-    Flag = "BoxESP",
     Callback = function(state)
         boxEnabled = state
     end
@@ -112,7 +105,6 @@ EspSection:CreateToggle({
 EspSection:CreateToggle({
     Name = "Filled Box",
     CurrentValue = false,
-    Flag = "FilledBoxESP",
     Callback = function(state)
         filledBoxEnabled = state
     end
@@ -121,34 +113,14 @@ EspSection:CreateToggle({
 EspSection:CreateToggle({
     Name = "Bone ESP",
     CurrentValue = false,
-    Flag = "BoneESP",
     Callback = function(state)
         boneEnabled = state
-    end
-})
-
-EspSection:CreateToggle({
-    Name = "Line ESP",
-    CurrentValue = false,
-    Flag = "LineESP",
-    Callback = function(state)
-        lineEnabled = state
-    end
-})
-
-EspSection:CreateToggle({
-    Name = "Name ESP",
-    CurrentValue = false,
-    Flag = "NameESP",
-    Callback = function(state)
-        nameEnabled = state
     end
 })
 
 EspSection:CreateColorPicker({
     Name = "Bone Color",
     Color = boneColor,
-    Flag = "BoneColor",
     Callback = function(color)
         boneColor = color
     end
@@ -159,10 +131,10 @@ local function getClosestTarget()
     local closestTarget = nil
     local shortestDistance = aimFOV
 
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= localPlayer and player.Character and player.Character:FindFirstChild("Head") then
-            local headPosition, onScreen = camera:WorldToViewportPoint(player.Character.Head.Position)
-            local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+    for _, player in pairs(game:GetService("Players"):GetPlayers()) do
+        if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
+            local headPosition, onScreen = workspace.CurrentCamera:WorldToViewportPoint(player.Character.Head.Position)
+            local screenCenter = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
             local distance = (Vector2.new(headPosition.X, headPosition.Y) - screenCenter).Magnitude
 
             if distance < shortestDistance then
@@ -176,12 +148,12 @@ local function getClosestTarget()
 end
 
 -- 🔥 Aimbot Loop
-RunService.RenderStepped:Connect(function()
+game:GetService("RunService").RenderStepped:Connect(function()
     if aimlock then
         local target = getClosestTarget()
         if target and target.Character and target.Character:FindFirstChild("Head") then
-            local headPosition = camera:WorldToViewportPoint(target.Character.Head.Position)
-            local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+            local headPosition = workspace.CurrentCamera:WorldToViewportPoint(target.Character.Head.Position)
+            local screenCenter = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
 
             local newMousePos = Vector2.new(
                 screenCenter.X + (headPosition.X - screenCenter.X) / aimSmoothness,
@@ -200,10 +172,10 @@ FOVCircle.NumSides = 50
 FOVCircle.Filled = false
 FOVCircle.Transparency = 1
 
-RunService.RenderStepped:Connect(function()
+game:GetService("RunService").RenderStepped:Connect(function()
     if drawFOV then
         FOVCircle.Color = fovColor
-        FOVCircle.Position = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+        FOVCircle.Position = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
         FOVCircle.Radius = aimFOV
         FOVCircle.Visible = true
     else
@@ -212,4 +184,4 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- ✅ Vérification du bon chargement
-print("🔥 Aimbot & ESP chargés avec Rayfield !")
+print("🔥 Aimbot & ESP chargés avec Rayfield UI !")
