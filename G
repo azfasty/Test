@@ -1,22 +1,22 @@
 -- 📌 Chargement de Rayfield UI
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
--- 📌 Vérification du bon chargement de Rayfield
 if not Rayfield then
-    warn("Rayfield UI n'a pas pu être chargé !")
+    warn("❌ Rayfield UI n'a pas pu être chargé !")
     return
 end
+print("✅ Rayfield UI chargé avec succès !")
 
 -- 📌 Création de la fenêtre principale
 local Window = Rayfield:CreateWindow({
     Name = "Rivals Aimbot",
     LoadingTitle = "Rivals Aimbot v1.0",
     LoadingSubtitle = "By azfasty",
-    Theme = "DarkBlue",  
-    ConfigurationSaving = {Enabled = false}
+    Theme = "Dark",
+    ConfigurationSaving = {Enabled = true, FolderName = "RivalsConfig", FileName = "AimbotSettings"}
 })
 
--- 🔹 Variables
+-- 🔹 Variables Aimbot & ESP
 local aimlock = false
 local drawFOV = false
 local aimSmoothness = 5
@@ -36,11 +36,11 @@ local boneColor = Color3.fromRGB(255, 0, 0)
 
 -- 📌 Onglet AIMBOT
 local AimbotTab = Window:CreateTab("Aimbot", "crosshair")
-local AimbotSection = AimbotTab:CreateSection("Aimbot Settings")
 
 AimbotTab:CreateToggle({
     Name = "Enable Aimbot",
     CurrentValue = false,
+    Flag = "Aimbot",
     Callback = function(state)
         aimlock = state
     end
@@ -49,6 +49,7 @@ AimbotTab:CreateToggle({
 AimbotTab:CreateToggle({
     Name = "Draw FOV",
     CurrentValue = false,
+    Flag = "DrawFOV",
     Callback = function(state)
         drawFOV = state
     end
@@ -59,6 +60,7 @@ AimbotTab:CreateSlider({
     Range = {50, 300},
     Increment = 5,
     CurrentValue = aimFOV,
+    Flag = "FOVSize",
     Callback = function(value)
         aimFOV = value
     end
@@ -69,6 +71,7 @@ AimbotTab:CreateSlider({
     Range = {1, 20},
     Increment = 1,
     CurrentValue = aimSmoothness,
+    Flag = "Smoothness",
     Callback = function(value)
         aimSmoothness = value
     end
@@ -77,56 +80,88 @@ AimbotTab:CreateSlider({
 AimbotTab:CreateColorPicker({
     Name = "FOV Color",
     Color = fovColor,
+    Flag = "FOVColor",
     Callback = function(color)
         fovColor = color
     end
 })
 
+AimbotTab:CreateToggle({
+    Name = "Enable Triggerbot",
+    CurrentValue = false,
+    Flag = "Triggerbot",
+    Callback = function(state)
+        triggerbotEnabled = state
+    end
+})
+
+AimbotTab:CreateToggle({
+    Name = "Enable Magic Bullet",
+    CurrentValue = false,
+    Flag = "MagicBullet",
+    Callback = function(state)
+        magicBulletEnabled = state
+    end
+})
+
 -- 📌 Onglet ESP
 local EspTab = Window:CreateTab("ESP", "eye")
-local EspSection = EspTab:CreateSection("ESP Settings")
 
-EspSection:CreateToggle({
+EspTab:CreateToggle({
     Name = "Enable ESP",
     CurrentValue = false,
+    Flag = "EnableESP",
     Callback = function(state)
         espEnabled = state
     end
 })
 
-EspSection:CreateToggle({
+EspTab:CreateToggle({
     Name = "Box ESP",
     CurrentValue = false,
+    Flag = "BoxESP",
     Callback = function(state)
         boxEnabled = state
     end
 })
 
-EspSection:CreateToggle({
+EspTab:CreateToggle({
     Name = "Filled Box",
     CurrentValue = false,
+    Flag = "FilledBoxESP",
     Callback = function(state)
         filledBoxEnabled = state
     end
 })
 
-EspSection:CreateToggle({
+EspTab:CreateToggle({
     Name = "Bone ESP",
     CurrentValue = false,
+    Flag = "BoneESP",
     Callback = function(state)
         boneEnabled = state
     end
 })
 
-EspSection:CreateColorPicker({
+EspTab:CreateToggle({
+    Name = "Line ESP",
+    CurrentValue = false,
+    Flag = "LineESP",
+    Callback = function(state)
+        lineEnabled = state
+    end
+})
+
+EspTab:CreateColorPicker({
     Name = "Bone Color",
     Color = boneColor,
+    Flag = "BoneColor",
     Callback = function(color)
         boneColor = color
     end
 })
 
--- 🎯 Fonction Aimbot
+-- 🎯 Aimbot Function
 local function getClosestTarget()
     local closestTarget = nil
     local shortestDistance = aimFOV
