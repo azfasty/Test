@@ -1,8 +1,8 @@
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local HttpService = game:GetService("HttpService")
 local Workspace = game:GetService("Workspace")
+local TweenService = game:GetService("TweenService")
 
 local localPlayer = Players.LocalPlayer
 local camera = Workspace.CurrentCamera
@@ -15,6 +15,16 @@ local aimKey = Enum.UserInputType.MouseButton2
 local triggerbotEnabled = false
 local magicBulletEnabled = false
 
+local espEnabled = false
+local boxEnabled = false
+local filledBoxEnabled = false
+local boneEnabled = false
+local lineEnabled = false
+local nameEnabled = false
+
+local fovColor = Color3.fromRGB(255, 255, 255)
+local boneColor = Color3.fromRGB(255, 0, 0)
+
 -- Chargement de la UI Library
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
 local Window = Library.CreateLib("Rivals Aimbot", "BloodTheme")
@@ -22,122 +32,56 @@ local Window = Library.CreateLib("Rivals Aimbot", "BloodTheme")
 local AimbotTab = Window:NewTab("Aimbot")
 local AimbotSection = AimbotTab:NewSection("Aimbot Settings")
 
--- Toggle Aimbot
 AimbotSection:NewToggle("Enable Aimbot", "Active/Désactive l'aimbot", function(state)
     aimlock = state
-    print("Aimbot activé :", aimlock)
 end)
 
--- Toggle Draw FOV
 AimbotSection:NewToggle("Draw FOV", "Affiche le cercle du FOV", function(state)
     drawFOV = state
 end)
 
--- Toggle Triggerbot
-AimbotSection:NewToggle("Triggerbot", "Tire automatiquement sur les ennemis", function(state)
-    triggerbotEnabled = state
-end)
-
--- Toggle Magic Bullet
-AimbotSection:NewToggle("Magic Bullet", "Les balles touchent toujours la cible", function(state)
-    magicBulletEnabled = state
-end)
-
--- Sliders
 AimbotSection:NewSlider("FOV", "Taille du cercle FOV", 50, 300, function(value)
     aimFOV = value
 end)
 
-AimbotSection:NewSlider("Smoothness", "Vitesse du aimbot", 1, 20, function(value)
-    aimSmoothness = value
+AimbotSection:NewColorPicker("FOV Color", "Change la couleur du FOV", Color3.fromRGB(255, 255, 255), function(color)
+    fovColor = color
 end)
 
--- Fonction pour trouver la cible la plus proche
-local function getClosestTarget()
-    local closestTarget = nil
-    local shortestDistance = aimFOV
+-- ESP Section
+local EspTab = Window:NewTab("ESP")
+local EspSection = EspTab:NewSection("ESP Settings")
 
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= localPlayer and player.Character and player.Character:FindFirstChild("Head") then
-            local headPosition, onScreen = camera:WorldToViewportPoint(player.Character.Head.Position)
-            if onScreen then
-                local mousePos = UserInputService:GetMouseLocation()
-                local distance = (Vector2.new(headPosition.X, headPosition.Y) - mousePos).Magnitude
-
-                if distance < shortestDistance then
-                    closestTarget = player
-                    shortestDistance = distance
-                end
-            end
-        end
-    end
-
-    return closestTarget
-end
-
--- Aimbot Loop
-RunService.RenderStepped:Connect(function()
-    if aimlock then
-        local target = getClosestTarget()
-        if target and target.Character and target.Character:FindFirstChild("Head") then
-            local headPosition = camera:WorldToViewportPoint(target.Character.Head.Position)
-            local mousePos = UserInputService:GetMouseLocation()
-
-            local newMousePos = Vector2.new(
-                mousePos.X + (headPosition.X - mousePos.X) / aimSmoothness,
-                mousePos.Y + (headPosition.Y - mousePos.Y) / aimSmoothness
-            )
-
-            mousemoverel(newMousePos.X - mousePos.X, newMousePos.Y - mousePos.Y)
-        end
-    end
+EspSection:NewToggle("Enable ESP", "Affiche l'ESP sur les ennemis", function(state)
+    espEnabled = state
 end)
 
--- Triggerbot Loop
-RunService.RenderStepped:Connect(function()
-    if triggerbotEnabled then
-        local target = getClosestTarget()
-        if target and target.Character and target.Character:FindFirstChild("Head") then
-            local headPosition, onScreen = camera:WorldToViewportPoint(target.Character.Head.Position)
-            if onScreen then
-                mouse1click()
-            end
-        end
-    end
+EspSection:NewToggle("Box", "Affiche une boîte autour des ennemis", function(state)
+    boxEnabled = state
 end)
 
--- Magic Bullet (Simulation)
-local function magicBullet()
-    if magicBulletEnabled then
-        local target = getClosestTarget()
-        if target and target.Character and target.Character:FindFirstChild("Head") then
-            local headPosition = target.Character.Head.Position
-            local bullet = Instance.new("Part", Workspace)
-            bullet.Size = Vector3.new(0.2, 0.2, 0.2)
-            bullet.Position = localPlayer.Character.Head.Position
-            bullet.Color = Color3.fromRGB(255, 0, 0)
-            bullet.Material = Enum.Material.Neon
-            bullet.Anchored = false
-            bullet.CanCollide = false
+EspSection:NewToggle("Filled Box", "Affiche une boîte remplie autour des ennemis", function(state)
+    filledBoxEnabled = state
+end)
 
-            local tweenService = game:GetService("TweenService")
-            local goal = {Position = headPosition}
-            local tweenInfo = TweenInfo.new(0.1, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
-            local tween = tweenService:Create(bullet, tweenInfo, goal)
+EspSection:NewToggle("Bone", "Affiche les os des ennemis", function(state)
+    boneEnabled = state
+end)
 
-            tween:Play()
-            tween.Completed:Connect(function()
-                bullet:Destroy()
-            end)
-        end
-    end
-end
+EspSection:NewToggle("Line", "Affiche une ligne entre l'ennemi et le bas de l'écran", function(state)
+    lineEnabled = state
+end)
 
-RunService.RenderStepped:Connect(magicBullet)
+EspSection:NewToggle("Name", "Affiche le pseudo des ennemis", function(state)
+    nameEnabled = state
+end)
 
--- Dessiner le FOV
+EspSection:NewColorPicker("Bone Color", "Change la couleur des os", Color3.fromRGB(255, 0, 0), function(color)
+    boneColor = color
+end)
+
+-- FOV Drawing
 local FOVCircle = Drawing.new("Circle")
-FOVCircle.Color = Color3.fromRGB(255, 255, 255)
 FOVCircle.Thickness = 2
 FOVCircle.NumSides = 50
 FOVCircle.Filled = false
@@ -145,11 +89,77 @@ FOVCircle.Transparency = 1
 
 RunService.RenderStepped:Connect(function()
     if drawFOV then
-        local mousePos = UserInputService:GetMouseLocation()
-        FOVCircle.Position = mousePos
+        FOVCircle.Color = fovColor
+        FOVCircle.Position = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
         FOVCircle.Radius = aimFOV
         FOVCircle.Visible = true
     else
         FOVCircle.Visible = false
+    end
+end)
+
+-- ESP Function
+local function createESP(player)
+    if player == localPlayer then return end
+    if not player.Character then return end
+
+    local highlight = Instance.new("Highlight", player.Character)
+    highlight.FillTransparency = 0.5
+    highlight.OutlineTransparency = 0.2
+    highlight.FillColor = Color3.fromRGB(255, 0, 0)
+
+    local function updateESP()
+        if not player.Character then return end
+        if espEnabled then
+            highlight.Enabled = true
+        else
+            highlight.Enabled = false
+        end
+    end
+
+    RunService.RenderStepped:Connect(updateESP)
+end
+
+for _, player in pairs(Players:GetPlayers()) do
+    createESP(player)
+end
+
+Players.PlayerAdded:Connect(createESP)
+
+-- Aimbot Function
+local function getClosestTarget()
+    local closestTarget = nil
+    local shortestDistance = aimFOV
+
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= localPlayer and player.Character and player.Character:FindFirstChild("Head") then
+            local headPosition, onScreen = camera:WorldToViewportPoint(player.Character.Head.Position)
+            local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+            local distance = (Vector2.new(headPosition.X, headPosition.Y) - screenCenter).Magnitude
+
+            if distance < shortestDistance then
+                closestTarget = player
+                shortestDistance = distance
+            end
+        end
+    end
+
+    return closestTarget
+end
+
+RunService.RenderStepped:Connect(function()
+    if aimlock then
+        local target = getClosestTarget()
+        if target and target.Character and target.Character:FindFirstChild("Head") then
+            local headPosition = camera:WorldToViewportPoint(target.Character.Head.Position)
+            local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+
+            local newMousePos = Vector2.new(
+                screenCenter.X + (headPosition.X - screenCenter.X) / aimSmoothness,
+                screenCenter.Y + (headPosition.Y - screenCenter.Y) / aimSmoothness
+            )
+
+            mousemoverel(newMousePos.X - screenCenter.X, newMousePos.Y - screenCenter.Y)
+        end
     end
 end)
