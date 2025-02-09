@@ -13,7 +13,7 @@ local Window = Rayfield:CreateWindow({
     Name = "Rivals Aimbot",
     LoadingTitle = "Rivals Aimbot v1.0",
     LoadingSubtitle = "By azfasty",
-    Theme = "Dark",  
+    Theme = "Default",  
     ConfigurationSaving = {Enabled = false}
 })
 
