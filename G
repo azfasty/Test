@@ -21,7 +21,7 @@ local AimbotTab = Window:CreateTab("Aimbot", "crosshair")
 local AimbotSection = AimbotTab:CreateSection("Aimbot Settings") 
 
 -- ✅ Toggle Aimbot
-local AimbotToggle = AimbotSection:CreateToggle({
+local Toggle = AimbotSection:CreateToggle({
     Name = "Enable Aimbot",
     CurrentValue = false,
     Flag = "Aimbot",
