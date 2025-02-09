@@ -1,17 +1,17 @@
+local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Rayfield/main/source"))()
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
-local TweenService = game:GetService("TweenService")
 
 local localPlayer = Players.LocalPlayer
 local camera = Workspace.CurrentCamera
 
+-- Variables
 local aimlock = false
 local drawFOV = false
 local aimSmoothness = 5
 local aimFOV = 100
-local aimKey = Enum.UserInputType.MouseButton2
 local triggerbotEnabled = false
 local magicBulletEnabled = false
 
@@ -25,108 +25,123 @@ local nameEnabled = false
 local fovColor = Color3.fromRGB(255, 255, 255)
 local boneColor = Color3.fromRGB(255, 0, 0)
 
--- Chargement de la UI Library
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
-local Window = Library.CreateLib("Rivals Aimbot", "BloodTheme")
+-- Chargement du Menu Rayfield
+local Window = Rayfield:CreateWindow({
+    Name = "Rivals Aimbot",
+    LoadingTitle = "Rivals Aimbot v1.0",
+    LoadingSubtitle = "By azfasty",
+    ConfigurationSaving = {Enabled = false}
+})
 
-local AimbotTab = Window:NewTab("Aimbot")
-local AimbotSection = AimbotTab:NewSection("Aimbot Settings")
+-- Onglet Aimbot
+local AimbotTab = Window:CreateTab("Aimbot")
+local AimbotSection = AimbotTab:CreateSection("Aimbot Settings")
 
-AimbotSection:NewToggle("Enable Aimbot", "Active/Désactive l'aimbot", function(state)
-    aimlock = state
-end)
-
-AimbotSection:NewToggle("Draw FOV", "Affiche le cercle du FOV", function(state)
-    drawFOV = state
-end)
-
-AimbotSection:NewSlider("FOV", "Taille du cercle FOV", 50, 300, function(value)
-    aimFOV = value
-end)
-
-AimbotSection:NewColorPicker("FOV Color", "Change la couleur du FOV", Color3.fromRGB(255, 255, 255), function(color)
-    fovColor = color
-end)
-
--- ESP Section
-local EspTab = Window:NewTab("ESP")
-local EspSection = EspTab:NewSection("ESP Settings")
-
-EspSection:NewToggle("Enable ESP", "Affiche l'ESP sur les ennemis", function(state)
-    espEnabled = state
-end)
-
-EspSection:NewToggle("Box", "Affiche une boîte autour des ennemis", function(state)
-    boxEnabled = state
-end)
-
-EspSection:NewToggle("Filled Box", "Affiche une boîte remplie autour des ennemis", function(state)
-    filledBoxEnabled = state
-end)
-
-EspSection:NewToggle("Bone", "Affiche les os des ennemis", function(state)
-    boneEnabled = state
-end)
-
-EspSection:NewToggle("Line", "Affiche une ligne entre l'ennemi et le bas de l'écran", function(state)
-    lineEnabled = state
-end)
-
-EspSection:NewToggle("Name", "Affiche le pseudo des ennemis", function(state)
-    nameEnabled = state
-end)
-
-EspSection:NewColorPicker("Bone Color", "Change la couleur des os", Color3.fromRGB(255, 0, 0), function(color)
-    boneColor = color
-end)
-
--- FOV Drawing
-local FOVCircle = Drawing.new("Circle")
-FOVCircle.Thickness = 2
-FOVCircle.NumSides = 50
-FOVCircle.Filled = false
-FOVCircle.Transparency = 1
-
-RunService.RenderStepped:Connect(function()
-    if drawFOV then
-        FOVCircle.Color = fovColor
-        FOVCircle.Position = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
-        FOVCircle.Radius = aimFOV
-        FOVCircle.Visible = true
-    else
-        FOVCircle.Visible = false
+AimbotSection:CreateToggle({
+    Name = "Enable Aimbot",
+    CurrentValue = false,
+    Callback = function(state)
+        aimlock = state
     end
-end)
+})
 
--- ESP Function
-local function createESP(player)
-    if player == localPlayer then return end
-    if not player.Character then return end
-
-    local highlight = Instance.new("Highlight", player.Character)
-    highlight.FillTransparency = 0.5
-    highlight.OutlineTransparency = 0.2
-    highlight.FillColor = Color3.fromRGB(255, 0, 0)
-
-    local function updateESP()
-        if not player.Character then return end
-        if espEnabled then
-            highlight.Enabled = true
-        else
-            highlight.Enabled = false
-        end
+AimbotSection:CreateToggle({
+    Name = "Draw FOV",
+    CurrentValue = false,
+    Callback = function(state)
+        drawFOV = state
     end
+})
 
-    RunService.RenderStepped:Connect(updateESP)
-end
+AimbotSection:CreateSlider({
+    Name = "FOV Size",
+    Min = 50,
+    Max = 300,
+    CurrentValue = aimFOV,
+    Callback = function(value)
+        aimFOV = value
+    end
+})
 
-for _, player in pairs(Players:GetPlayers()) do
-    createESP(player)
-end
+AimbotSection:CreateSlider({
+    Name = "Smoothness",
+    Min = 1,
+    Max = 20,
+    CurrentValue = aimSmoothness,
+    Callback = function(value)
+        aimSmoothness = value
+    end
+})
 
-Players.PlayerAdded:Connect(createESP)
+AimbotSection:CreateColorPicker({
+    Name = "FOV Color",
+    Color = fovColor,
+    Callback = function(color)
+        fovColor = color
+    end
+})
 
--- Aimbot Function
+-- Onglet ESP
+local EspTab = Window:CreateTab("ESP")
+local EspSection = EspTab:CreateSection("ESP Settings")
+
+EspSection:CreateToggle({
+    Name = "Enable ESP",
+    CurrentValue = false,
+    Callback = function(state)
+        espEnabled = state
+    end
+})
+
+EspSection:CreateToggle({
+    Name = "Box ESP",
+    CurrentValue = false,
+    Callback = function(state)
+        boxEnabled = state
+    end
+})
+
+EspSection:CreateToggle({
+    Name = "Filled Box",
+    CurrentValue = false,
+    Callback = function(state)
+        filledBoxEnabled = state
+    end
+})
+
+EspSection:CreateToggle({
+    Name = "Bone ESP",
+    CurrentValue = false,
+    Callback = function(state)
+        boneEnabled = state
+    end
+})
+
+EspSection:CreateToggle({
+    Name = "Line ESP",
+    CurrentValue = false,
+    Callback = function(state)
+        lineEnabled = state
+    end
+})
+
+EspSection:CreateToggle({
+    Name = "Name ESP",
+    CurrentValue = false,
+    Callback = function(state)
+        nameEnabled = state
+    end
+})
+
+EspSection:CreateColorPicker({
+    Name = "Bone Color",
+    Color = boneColor,
+    Callback = function(color)
+        boneColor = color
+    end
+})
+
+-- Fonction pour trouver la cible la plus proche
 local function getClosestTarget()
     local closestTarget = nil
     local shortestDistance = aimFOV
@@ -147,6 +162,7 @@ local function getClosestTarget()
     return closestTarget
 end
 
+-- Aimbot Loop
 RunService.RenderStepped:Connect(function()
     if aimlock then
         local target = getClosestTarget()
@@ -161,5 +177,23 @@ RunService.RenderStepped:Connect(function()
 
             mousemoverel(newMousePos.X - screenCenter.X, newMousePos.Y - screenCenter.Y)
         end
+    end
+end)
+
+-- FOV Drawing
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Thickness = 2
+FOVCircle.NumSides = 50
+FOVCircle.Filled = false
+FOVCircle.Transparency = 1
+
+RunService.RenderStepped:Connect(function()
+    if drawFOV then
+        FOVCircle.Color = fovColor
+        FOVCircle.Position = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+        FOVCircle.Radius = aimFOV
+        FOVCircle.Visible = true
+    else
+        FOVCircle.Visible = false
     end
 end)
