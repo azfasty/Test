@@ -25,21 +25,23 @@ local nameEnabled = false
 local fovColor = Color3.fromRGB(255, 255, 255)
 local boneColor = Color3.fromRGB(255, 0, 0)
 
--- Chargement du Menu Rayfield
+-- Création de la fenêtre Rayfield
 local Window = Rayfield:CreateWindow({
     Name = "Rivals Aimbot",
     LoadingTitle = "Rivals Aimbot v1.0",
     LoadingSubtitle = "By azfasty",
+    Theme = "Dark",
     ConfigurationSaving = {Enabled = false}
 })
 
 -- Onglet Aimbot
-local AimbotTab = Window:CreateTab("Aimbot")
+local AimbotTab = Window:CreateTab("Aimbot", "crosshair")
 local AimbotSection = AimbotTab:CreateSection("Aimbot Settings")
 
 AimbotSection:CreateToggle({
     Name = "Enable Aimbot",
     CurrentValue = false,
+    Flag = "Aimbot",
     Callback = function(state)
         aimlock = state
     end
@@ -48,6 +50,7 @@ AimbotSection:CreateToggle({
 AimbotSection:CreateToggle({
     Name = "Draw FOV",
     CurrentValue = false,
+    Flag = "DrawFOV",
     Callback = function(state)
         drawFOV = state
     end
@@ -55,9 +58,10 @@ AimbotSection:CreateToggle({
 
 AimbotSection:CreateSlider({
     Name = "FOV Size",
-    Min = 50,
-    Max = 300,
+    Range = {50, 300},
+    Increment = 5,
     CurrentValue = aimFOV,
+    Flag = "FOVSize",
     Callback = function(value)
         aimFOV = value
     end
@@ -65,9 +69,10 @@ AimbotSection:CreateSlider({
 
 AimbotSection:CreateSlider({
     Name = "Smoothness",
-    Min = 1,
-    Max = 20,
+    Range = {1, 20},
+    Increment = 1,
     CurrentValue = aimSmoothness,
+    Flag = "Smoothness",
     Callback = function(value)
         aimSmoothness = value
     end
@@ -76,18 +81,20 @@ AimbotSection:CreateSlider({
 AimbotSection:CreateColorPicker({
     Name = "FOV Color",
     Color = fovColor,
+    Flag = "FOVColor",
     Callback = function(color)
         fovColor = color
     end
 })
 
 -- Onglet ESP
-local EspTab = Window:CreateTab("ESP")
+local EspTab = Window:CreateTab("ESP", "eye")
 local EspSection = EspTab:CreateSection("ESP Settings")
 
 EspSection:CreateToggle({
     Name = "Enable ESP",
     CurrentValue = false,
+    Flag = "EnableESP",
     Callback = function(state)
         espEnabled = state
     end
@@ -96,6 +103,7 @@ EspSection:CreateToggle({
 EspSection:CreateToggle({
     Name = "Box ESP",
     CurrentValue = false,
+    Flag = "BoxESP",
     Callback = function(state)
         boxEnabled = state
     end
@@ -104,6 +112,7 @@ EspSection:CreateToggle({
 EspSection:CreateToggle({
     Name = "Filled Box",
     CurrentValue = false,
+    Flag = "FilledBoxESP",
     Callback = function(state)
         filledBoxEnabled = state
     end
@@ -112,6 +121,7 @@ EspSection:CreateToggle({
 EspSection:CreateToggle({
     Name = "Bone ESP",
     CurrentValue = false,
+    Flag = "BoneESP",
     Callback = function(state)
         boneEnabled = state
     end
@@ -120,6 +130,7 @@ EspSection:CreateToggle({
 EspSection:CreateToggle({
     Name = "Line ESP",
     CurrentValue = false,
+    Flag = "LineESP",
     Callback = function(state)
         lineEnabled = state
     end
@@ -128,6 +139,7 @@ EspSection:CreateToggle({
 EspSection:CreateToggle({
     Name = "Name ESP",
     CurrentValue = false,
+    Flag = "NameESP",
     Callback = function(state)
         nameEnabled = state
     end
@@ -136,6 +148,7 @@ EspSection:CreateToggle({
 EspSection:CreateColorPicker({
     Name = "Bone Color",
     Color = boneColor,
+    Flag = "BoneColor",
     Callback = function(color)
         boneColor = color
     end
