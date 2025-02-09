@@ -2,27 +2,48 @@ local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
+local Workspace = game:GetService("Workspace")
 
 local localPlayer = Players.LocalPlayer
-local camera = workspace.CurrentCamera
+local camera = Workspace.CurrentCamera
+
 local aimlock = false
+local drawFOV = false
 local aimSmoothness = 5
 local aimFOV = 100
-local aimKey = Enum.UserInputType.MouseButton2  -- Clic droit
+local aimKey = Enum.UserInputType.MouseButton2
+local triggerbotEnabled = false
+local magicBulletEnabled = false
 
--- Chargement du UI Library
+-- Chargement de la UI Library
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
 local Window = Library.CreateLib("Rivals Aimbot", "BloodTheme")
 
 local AimbotTab = Window:NewTab("Aimbot")
 local AimbotSection = AimbotTab:NewSection("Aimbot Settings")
 
--- Correction du Toggle Enable Aimbot
+-- Toggle Aimbot
 AimbotSection:NewToggle("Enable Aimbot", "Active/Désactive l'aimbot", function(state)
     aimlock = state
-    print("Aimbot activé :", aimlock) -- Débogage
+    print("Aimbot activé :", aimlock)
 end)
 
+-- Toggle Draw FOV
+AimbotSection:NewToggle("Draw FOV", "Affiche le cercle du FOV", function(state)
+    drawFOV = state
+end)
+
+-- Toggle Triggerbot
+AimbotSection:NewToggle("Triggerbot", "Tire automatiquement sur les ennemis", function(state)
+    triggerbotEnabled = state
+end)
+
+-- Toggle Magic Bullet
+AimbotSection:NewToggle("Magic Bullet", "Les balles touchent toujours la cible", function(state)
+    magicBulletEnabled = state
+end)
+
+-- Sliders
 AimbotSection:NewSlider("FOV", "Taille du cercle FOV", 50, 300, function(value)
     aimFOV = value
 end)
@@ -38,13 +59,15 @@ local function getClosestTarget()
 
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= localPlayer and player.Character and player.Character:FindFirstChild("Head") then
-            local headPosition = camera:WorldToViewportPoint(player.Character.Head.Position)
-            local mousePos = UserInputService:GetMouseLocation()
-            local distance = (Vector2.new(headPosition.X, headPosition.Y) - mousePos).Magnitude
+            local headPosition, onScreen = camera:WorldToViewportPoint(player.Character.Head.Position)
+            if onScreen then
+                local mousePos = UserInputService:GetMouseLocation()
+                local distance = (Vector2.new(headPosition.X, headPosition.Y) - mousePos).Magnitude
 
-            if distance < shortestDistance then
-                closestTarget = player
-                shortestDistance = distance
+                if distance < shortestDistance then
+                    closestTarget = player
+                    shortestDistance = distance
+                end
             end
         end
     end
@@ -70,45 +93,63 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Ajout d'un système de déplacement pour la fenêtre du menu
-local MainUI = game:GetService("CoreGui"):FindFirstChild("Rivals Aimbot")
-if MainUI then
-    local Dragging
-    local DragInput
-    local DragStart
-    local StartPos
-
-    local function UpdateInput(input)
-        local delta = input.Position - DragStart
-        MainUI.Position = UDim2.new(
-            StartPos.X.Scale, StartPos.X.Offset + delta.X,
-            StartPos.Y.Scale, StartPos.Y.Offset + delta.Y
-        )
+-- Triggerbot Loop
+RunService.RenderStepped:Connect(function()
+    if triggerbotEnabled then
+        local target = getClosestTarget()
+        if target and target.Character and target.Character:FindFirstChild("Head") then
+            local headPosition, onScreen = camera:WorldToViewportPoint(target.Character.Head.Position)
+            if onScreen then
+                mouse1click()
+            end
+        end
     end
+end)
 
-    MainUI.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            Dragging = true
-            DragStart = input.Position
-            StartPos = MainUI.Position
+-- Magic Bullet (Simulation)
+local function magicBullet()
+    if magicBulletEnabled then
+        local target = getClosestTarget()
+        if target and target.Character and target.Character:FindFirstChild("Head") then
+            local headPosition = target.Character.Head.Position
+            local bullet = Instance.new("Part", Workspace)
+            bullet.Size = Vector3.new(0.2, 0.2, 0.2)
+            bullet.Position = localPlayer.Character.Head.Position
+            bullet.Color = Color3.fromRGB(255, 0, 0)
+            bullet.Material = Enum.Material.Neon
+            bullet.Anchored = false
+            bullet.CanCollide = false
 
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    Dragging = false
-                end
+            local tweenService = game:GetService("TweenService")
+            local goal = {Position = headPosition}
+            local tweenInfo = TweenInfo.new(0.1, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+            local tween = tweenService:Create(bullet, tweenInfo, goal)
+
+            tween:Play()
+            tween.Completed:Connect(function()
+                bullet:Destroy()
             end)
         end
-    end)
-
-    MainUI.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement then
-            DragInput = input
-        end
-    end)
-
-    UserInputService.InputChanged:Connect(function(input)
-        if input == DragInput and Dragging then
-            UpdateInput(input)
-        end
-    end)
+    end
 end
+
+RunService.RenderStepped:Connect(magicBullet)
+
+-- Dessiner le FOV
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Color = Color3.fromRGB(255, 255, 255)
+FOVCircle.Thickness = 2
+FOVCircle.NumSides = 50
+FOVCircle.Filled = false
+FOVCircle.Transparency = 1
+
+RunService.RenderStepped:Connect(function()
+    if drawFOV then
+        local mousePos = UserInputService:GetMouseLocation()
+        FOVCircle.Position = mousePos
+        FOVCircle.Radius = aimFOV
+        FOVCircle.Visible = true
+    else
+        FOVCircle.Visible = false
+    end
+end)
