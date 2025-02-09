@@ -1,0 +1,70 @@
+-- Aimbot avec Menu (Rivals - Roblox)
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
+
+local localPlayer = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+local aimlock = false
+local aimSmoothness = 5
+local aimFOV = 100
+local aimKey = Enum.UserInputType.MouseButton2  -- Clic droit
+
+-- Chargement du UI Library
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
+local Window = Library.CreateLib("Rivals Aimbot", "BloodTheme")
+
+local AimbotTab = Window:NewTab("Aimbot")
+local AimbotSection = AimbotTab:NewSection("Aimbot Settings")
+
+AimbotSection:NewToggle("Enable Aimbot", "Active/Désactive l'aimbot", function(state)
+    aimlock = state
+end)
+
+AimbotSection:NewSlider("FOV", "Taille du cercle FOV", 50, 300, function(value)
+    aimFOV = value
+end)
+
+AimbotSection:NewSlider("Smoothness", "Vitesse du aimbot", 1, 20, function(value)
+    aimSmoothness = value
+end)
+
+-- Fonction pour trouver la cible la plus proche
+local function getClosestTarget()
+    local closestTarget = nil
+    local shortestDistance = aimFOV
+
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= localPlayer and player.Character and player.Character:FindFirstChild("Head") then
+            local headPosition = camera:WorldToViewportPoint(player.Character.Head.Position)
+            local mousePos = UserInputService:GetMouseLocation()
+            local distance = (Vector2.new(headPosition.X, headPosition.Y) - mousePos).Magnitude
+
+            if distance < shortestDistance then
+                closestTarget = player
+                shortestDistance = distance
+            end
+        end
+    end
+
+    return closestTarget
+end
+
+-- Aimbot Loop
+RunService.RenderStepped:Connect(function()
+    if aimlock then
+        local target = getClosestTarget()
+        if target and target.Character and target.Character:FindFirstChild("Head") then
+            local headPosition = camera:WorldToViewportPoint(target.Character.Head.Position)
+            local mousePos = UserInputService:GetMouseLocation()
+
+            local newMousePos = Vector2.new(
+                mousePos.X + (headPosition.X - mousePos.X) / aimSmoothness,
+                mousePos.Y + (headPosition.Y - mousePos.Y) / aimSmoothness
+            )
+
+            mousemoverel(newMousePos.X - mousePos.X, newMousePos.Y - mousePos.Y)
+        end
+    end
+end)
