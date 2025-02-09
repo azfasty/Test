@@ -12,17 +12,16 @@ local Window = Rayfield:CreateWindow({
     Name = "Rivals Aimbot",
     LoadingTitle = "Rivals Aimbot v1.0",
     LoadingSubtitle = "By azfasty",
-    Theme = "Dark",  
+    Theme = "Dark",
     ConfigurationSaving = {Enabled = false}
 })
 
 -- 📌 Création de l'onglet Aimbot
-local AimbotTab = Window:CreateTab("Aimbot", "crosshair")
-local AimbotSection = AimbotTab:CreateSection("Aimbot Settings")
+local AimbotTab = Window:CreateTab("Aimbot", "crosshair") 
+local AimbotSection = AimbotTab:CreateSection("Aimbot Settings") 
 
--- ✅ Correction de `CreateToggle()` en stockant la variable avant de l’appeler
-local AimbotToggle
-AimbotToggle = AimbotSection.CreateToggle(AimbotSection, {
+-- ✅ Toggle Aimbot
+local AimbotToggle = AimbotSection:CreateToggle({
     Name = "Enable Aimbot",
     CurrentValue = false,
     Flag = "Aimbot",
@@ -31,13 +30,35 @@ AimbotToggle = AimbotSection.CreateToggle(AimbotSection, {
     end
 })
 
-local FOVToggle
-FOVToggle = AimbotSection.CreateToggle(AimbotSection, {
+-- ✅ Toggle Draw FOV
+local FOVToggle = AimbotSection:CreateToggle({
     Name = "Draw FOV",
     CurrentValue = false,
     Flag = "DrawFOV",
     Callback = function(state)
         print("FOV activé :", state)
+    end
+})
+
+-- ✅ Slider pour régler la taille du FOV
+local FOVSlider = AimbotSection:CreateSlider({
+    Name = "FOV Size",
+    Range = {50, 300},
+    Increment = 5,
+    CurrentValue = 100,
+    Flag = "FOVSize",
+    Callback = function(value)
+        print("FOV Size :", value)
+    end
+})
+
+-- ✅ Color Picker pour changer la couleur du FOV
+local FOVColorPicker = AimbotSection:CreateColorPicker({
+    Name = "FOV Color",
+    Color = Color3.fromRGB(255, 255, 255),
+    Flag = "FOVColor",
+    Callback = function(color)
+        print("FOV Color changé :", color)
     end
 })
 
