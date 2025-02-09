@@ -1,4 +1,3 @@
--- Aimbot avec Menu (Rivals - Roblox)
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -18,8 +17,10 @@ local Window = Library.CreateLib("Rivals Aimbot", "BloodTheme")
 local AimbotTab = Window:NewTab("Aimbot")
 local AimbotSection = AimbotTab:NewSection("Aimbot Settings")
 
+-- Correction du Toggle Enable Aimbot
 AimbotSection:NewToggle("Enable Aimbot", "Active/Désactive l'aimbot", function(state)
     aimlock = state
+    print("Aimbot activé :", aimlock) -- Débogage
 end)
 
 AimbotSection:NewSlider("FOV", "Taille du cercle FOV", 50, 300, function(value)
@@ -68,3 +69,46 @@ RunService.RenderStepped:Connect(function()
         end
     end
 end)
+
+-- Ajout d'un système de déplacement pour la fenêtre du menu
+local MainUI = game:GetService("CoreGui"):FindFirstChild("Rivals Aimbot")
+if MainUI then
+    local Dragging
+    local DragInput
+    local DragStart
+    local StartPos
+
+    local function UpdateInput(input)
+        local delta = input.Position - DragStart
+        MainUI.Position = UDim2.new(
+            StartPos.X.Scale, StartPos.X.Offset + delta.X,
+            StartPos.Y.Scale, StartPos.Y.Offset + delta.Y
+        )
+    end
+
+    MainUI.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            Dragging = true
+            DragStart = input.Position
+            StartPos = MainUI.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    Dragging = false
+                end
+            end)
+        end
+    end)
+
+    MainUI.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            DragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == DragInput and Dragging then
+            UpdateInput(input)
+        end
+    end)
+end
