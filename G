@@ -7,27 +7,16 @@ if not Rayfield then
 end
 print("✅ Rayfield UI chargé avec succès !")
 
--- 🔹 Clé d'accès au menu
-local Window = Rayfield:CreateWindow({
-    Name = "Rivals Aimbot",
-    LoadingTitle = "Rivals Aimbot v1.0",
-    LoadingSubtitle = "By azfasty",
-    Theme = "Dark",
-    ConfigurationSaving = {Enabled = true, FolderName = "RivalsConfig", FileName = "AimbotSettings"},
-    KeySystem = true,
-    KeySettings = {
-        Title = "Rivals Key System",
-        Subtitle = "Entrez votre clé pour accéder au menu",
-        Note = "Contactez le développeur pour obtenir une clé",
-        FileName = "RivalsKey",
-        SaveKey = true,
-        GrabKeyFromSite = false,
-        Key = {"RivalsAimbot123", "TestKey987"} -- 🔑 Liste des clés valides
-    }
-})
+-- 🔹 Variables principales
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+local Camera = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 
--- 🔹 Variables
-local aimlock = false
+-- 🔹 Paramètres
+local aimActive = false
 local alwaysLock = false
 local drawFOV = false
 local aimSmoothness = 5
@@ -47,35 +36,28 @@ FOVCircle.Transparency = 1
 local ESPBoxes = {}
 local ESPNames = {}
 
+-- 📌 Interface utilisateur
+local Window = Rayfield:CreateWindow({
+    Name = "Rivals Aimbot",
+    Theme = "Dark",
+    ConfigurationSaving = {Enabled = true, FolderName = "RivalsConfig", FileName = "AimbotSettings"},
+    KeySystem = true,
+    KeySettings = {Key = {"RivalsAimbot123", "TestKey987"}}
+})
+
 -- 📌 Onglet AIMBOT
 local AimbotTab = Window:CreateTab("Aimbot", "crosshair")
 
 AimbotTab:CreateToggle({
     Name = "Enable Aimbot",
     CurrentValue = false,
-    Flag = "Aimbot",
-    Callback = function(state)
-        aimlock = state
-    end
+    Callback = function(state) aimActive = state end
 })
 
 AimbotTab:CreateToggle({
     Name = "Always Lock (Mobile)",
     CurrentValue = false,
-    Flag = "AlwaysLock",
-    Callback = function(state)
-        alwaysLock = state
-    end
-})
-
-AimbotTab:CreateToggle({
-    Name = "Draw FOV",
-    CurrentValue = false,
-    Flag = "DrawFOV",
-    Callback = function(state)
-        drawFOV = state
-        FOVCircle.Visible = state
-    end
+    Callback = function(state) alwaysLock = state end
 })
 
 AimbotTab:CreateSlider({
@@ -83,7 +65,6 @@ AimbotTab:CreateSlider({
     Range = {50, 300},
     Increment = 5,
     CurrentValue = aimFOV,
-    Flag = "FOVSize",
     Callback = function(value)
         aimFOV = value
         FOVCircle.Radius = value
@@ -95,16 +76,21 @@ AimbotTab:CreateSlider({
     Range = {1, 20},
     Increment = 1,
     CurrentValue = aimSmoothness,
-    Flag = "Smoothness",
-    Callback = function(value)
-        aimSmoothness = value
+    Callback = function(value) aimSmoothness = value end
+})
+
+AimbotTab:CreateToggle({
+    Name = "Draw FOV",
+    CurrentValue = false,
+    Callback = function(state)
+        drawFOV = state
+        FOVCircle.Visible = state
     end
 })
 
 AimbotTab:CreateColorPicker({
     Name = "FOV Color",
     Color = fovColor,
-    Flag = "FOVColor",
     Callback = function(color)
         fovColor = color
         FOVCircle.Color = color
@@ -117,91 +103,72 @@ local EspTab = Window:CreateTab("ESP", "eye")
 EspTab:CreateToggle({
     Name = "Enable ESP",
     CurrentValue = false,
-    Flag = "EnableESP",
-    Callback = function(state)
-        espEnabled = state
-    end
+    Callback = function(state) espEnabled = state end
 })
 
 EspTab:CreateColorPicker({
     Name = "ESP Color",
     Color = espColor,
-    Flag = "ESPColor",
-    Callback = function(color)
-        espColor = color
-    end
+    Callback = function(color) espColor = color end
 })
 
--- 📌 ESP : Affichage des joueurs en temps réel
-game:GetService("RunService").RenderStepped:Connect(function()
+-- 📌 ESP : Affichage en temps réel
+RunService.RenderStepped:Connect(function()
     if espEnabled then
-        for _, v in pairs(ESPBoxes) do
-            v.Visible = false
-        end
-        for _, v in pairs(ESPNames) do
-            v.Visible = false
-        end
+        for _, box in pairs(ESPBoxes) do box.Visible = false end
+        for _, name in pairs(ESPNames) do name.Visible = false end
 
-        for _, player in pairs(game.Players:GetPlayers()) do
-            if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                local head = player.Character:FindFirstChild("Head")
-                if head then
-                    local headPosition, onScreen = workspace.CurrentCamera:WorldToViewportPoint(head.Position)
-                    if onScreen then
-                        -- Box ESP
-                        if not ESPBoxes[player] then
-                            ESPBoxes[player] = Drawing.new("Square")
-                            ESPBoxes[player].Thickness = 2
-                            ESPBoxes[player].Transparency = 1
-                            ESPBoxes[player].Filled = false
-                        end
-                        ESPBoxes[player].Size = Vector2.new(50, 100)
-                        ESPBoxes[player].Position = Vector2.new(headPosition.X - 25, headPosition.Y - 50)
-                        ESPBoxes[player].Color = espColor
-                        ESPBoxes[player].Visible = true
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local rootPart = player.Character.HumanoidRootPart
+                local screenPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
 
-                        -- Name ESP
-                        if not ESPNames[player] then
-                            ESPNames[player] = Drawing.new("Text")
-                            ESPNames[player].Size = 16
-                            ESPNames[player].Outline = true
-                        end
-                        ESPNames[player].Position = Vector2.new(headPosition.X, headPosition.Y - 60)
-                        ESPNames[player].Color = espColor
-                        ESPNames[player].Text = player.Name
-                        ESPNames[player].Visible = true
+                if onScreen then
+                    -- Création du ESP
+                    if not ESPBoxes[player] then
+                        ESPBoxes[player] = Drawing.new("Square")
+                        ESPBoxes[player].Thickness = 2
+                        ESPBoxes[player].Transparency = 1
+                        ESPBoxes[player].Filled = false
                     end
+                    ESPBoxes[player].Size = Vector2.new(50, 100)
+                    ESPBoxes[player].Position = Vector2.new(screenPos.X - 25, screenPos.Y - 50)
+                    ESPBoxes[player].Color = espColor
+                    ESPBoxes[player].Visible = true
+
+                    -- Création du nom du joueur
+                    if not ESPNames[player] then
+                        ESPNames[player] = Drawing.new("Text")
+                        ESPNames[player].Size = 16
+                        ESPNames[player].Outline = true
+                    end
+                    ESPNames[player].Position = Vector2.new(screenPos.X, screenPos.Y - 60)
+                    ESPNames[player].Color = espColor
+                    ESPNames[player].Text = player.Name
+                    ESPNames[player].Visible = true
                 end
             end
         end
     end
 end)
 
--- 🎯 Aimbot avec WallChecker et DeadChecker
+-- 🎯 Aimbot avec correction Smooth
 local function getClosestTarget()
-    local camera = workspace.CurrentCamera
     local closestTarget = nil
-    local shortestDistance = aimFOV
+    local closestDistance = aimFOV
 
-    for _, player in pairs(game.Players:GetPlayers()) do
-        if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
-            -- ✅ DeadChecker : Ignorer les joueurs morts
-            if player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health <= 0 then
-                continue
-            end
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
+            local head = player.Character.Head
+            local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
 
-            -- ✅ WallChecker : Vérifie si un mur bloque la vue
-            local ray = Ray.new(camera.CFrame.Position, (player.Character.Head.Position - camera.CFrame.Position).unit * 500)
-            local hitPart, _ = workspace:FindPartOnRay(ray, game.Players.LocalPlayer.Character)
+            if onScreen then
+                local mousePos = UserInputService:GetMouseLocation()
+                local distance = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
 
-            if hitPart and hitPart:IsDescendantOf(player.Character) then
-                local headPosition = camera:WorldToViewportPoint(player.Character.Head.Position)
-                local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
-                local distance = (Vector2.new(headPosition.X, headPosition.Y) - screenCenter).Magnitude
-
-                if distance < shortestDistance then
+                if distance < closestDistance then
                     closestTarget = player
-                    shortestDistance = distance
+                    closestDistance = distance
                 end
             end
         end
@@ -211,21 +178,21 @@ local function getClosestTarget()
 end
 
 -- 🎯 Aimbot Loop avec correction du Smooth 1
-game:GetService("RunService").RenderStepped:Connect(function()
-    if aimlock or alwaysLock then
+RunService.RenderStepped:Connect(function()
+    if aimActive or alwaysLock then
         local target = getClosestTarget()
         if target and target.Character and target.Character:FindFirstChild("Head") then
-            local headPosition = workspace.CurrentCamera:WorldToViewportPoint(target.Character.Head.Position)
-            local screenCenter = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
+            local headPos = Camera:WorldToViewportPoint(target.Character.Head.Position)
+            local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
             local newMousePos = screenCenter
             if aimSmoothness > 1 then
                 newMousePos = Vector2.new(
-                    screenCenter.X + (headPosition.X - screenCenter.X) / aimSmoothness,
-                    screenCenter.Y + (headPosition.Y - screenCenter.Y) / aimSmoothness
+                    screenCenter.X + (headPos.X - screenCenter.X) / aimSmoothness,
+                    screenCenter.Y + (headPos.Y - screenCenter.Y) / aimSmoothness
                 )
             else
-                newMousePos = Vector2.new(headPosition.X, headPosition.Y)
+                newMousePos = Vector2.new(headPos.X, headPos.Y)
             end
 
             mousemoverel(newMousePos.X - screenCenter.X, newMousePos.Y - screenCenter.Y)
