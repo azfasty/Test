@@ -12,7 +12,7 @@ local Window = Rayfield:CreateWindow({
     Name = "Rivals Aimbot",
     LoadingTitle = "Rivals Aimbot v1.0",
     LoadingSubtitle = "By azfasty",
-    Theme = "Darkblue",
+    Theme = "Dark",
     ConfigurationSaving = {Enabled = true, FolderName = "RivalsConfig", FileName = "AimbotSettings"},
     KeySystem = true,
     KeySettings = {
@@ -42,6 +42,10 @@ FOVCircle.Thickness = 2
 FOVCircle.NumSides = 50
 FOVCircle.Filled = false
 FOVCircle.Transparency = 1
+
+-- 📌 ESP : Création des éléments Drawing
+local ESPBoxes = {}
+local ESPNames = {}
 
 -- 📌 Onglet AIMBOT
 local AimbotTab = Window:CreateTab("Aimbot", "crosshair")
@@ -128,36 +132,50 @@ EspTab:CreateColorPicker({
     end
 })
 
--- 📌 Onglet MISC (Téléportation)
-local MiscTab = Window:CreateTab("Misc", "tool")
+-- 📌 ESP : Affichage des joueurs en temps réel
+game:GetService("RunService").RenderStepped:Connect(function()
+    if espEnabled then
+        for _, v in pairs(ESPBoxes) do
+            v.Visible = false
+        end
+        for _, v in pairs(ESPNames) do
+            v.Visible = false
+        end
 
-MiscTab:CreateButton({
-    Name = "Se téléporter au joueur le plus proche",
-    Callback = function()
-        local closestPlayer = nil
-        local shortestDistance = math.huge
-        local player = game.Players.LocalPlayer
-        local character = player.Character
+        for _, player in pairs(game.Players:GetPlayers()) do
+            if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local head = player.Character:FindFirstChild("Head")
+                if head then
+                    local headPosition, onScreen = workspace.CurrentCamera:WorldToViewportPoint(head.Position)
+                    if onScreen then
+                        -- Box ESP
+                        if not ESPBoxes[player] then
+                            ESPBoxes[player] = Drawing.new("Square")
+                            ESPBoxes[player].Thickness = 2
+                            ESPBoxes[player].Transparency = 1
+                            ESPBoxes[player].Filled = false
+                        end
+                        ESPBoxes[player].Size = Vector2.new(50, 100)
+                        ESPBoxes[player].Position = Vector2.new(headPosition.X - 25, headPosition.Y - 50)
+                        ESPBoxes[player].Color = espColor
+                        ESPBoxes[player].Visible = true
 
-        if character and character:FindFirstChild("HumanoidRootPart") then
-            local rootPart = character.HumanoidRootPart
-
-            for _, p in pairs(game.Players:GetPlayers()) do
-                if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                    local distance = (p.Character.HumanoidRootPart.Position - rootPart.Position).magnitude
-                    if distance < shortestDistance then
-                        closestPlayer = p
-                        shortestDistance = distance
+                        -- Name ESP
+                        if not ESPNames[player] then
+                            ESPNames[player] = Drawing.new("Text")
+                            ESPNames[player].Size = 16
+                            ESPNames[player].Outline = true
+                        end
+                        ESPNames[player].Position = Vector2.new(headPosition.X, headPosition.Y - 60)
+                        ESPNames[player].Color = espColor
+                        ESPNames[player].Text = player.Name
+                        ESPNames[player].Visible = true
                     end
                 end
             end
-
-            if closestPlayer then
-                character.HumanoidRootPart.CFrame = closestPlayer.Character.HumanoidRootPart.CFrame
-            end
         end
     end
-})
+end)
 
 -- 🎯 Aimbot avec WallChecker et DeadChecker
 local function getClosestTarget()
@@ -192,7 +210,7 @@ local function getClosestTarget()
     return closestTarget
 end
 
--- 🎯 Aimbot Loop
+-- 🎯 Aimbot Loop avec correction du Smooth 1
 game:GetService("RunService").RenderStepped:Connect(function()
     if aimlock or alwaysLock then
         local target = getClosestTarget()
@@ -200,20 +218,17 @@ game:GetService("RunService").RenderStepped:Connect(function()
             local headPosition = workspace.CurrentCamera:WorldToViewportPoint(target.Character.Head.Position)
             local screenCenter = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
 
-            local newMousePos = Vector2.new(
-                screenCenter.X + (headPosition.X - screenCenter.X) / aimSmoothness,
-                screenCenter.Y + (headPosition.Y - screenCenter.Y) / aimSmoothness
-            )
+            local newMousePos = screenCenter
+            if aimSmoothness > 1 then
+                newMousePos = Vector2.new(
+                    screenCenter.X + (headPosition.X - screenCenter.X) / aimSmoothness,
+                    screenCenter.Y + (headPosition.Y - screenCenter.Y) / aimSmoothness
+                )
+            else
+                newMousePos = Vector2.new(headPosition.X, headPosition.Y)
+            end
 
             mousemoverel(newMousePos.X - screenCenter.X, newMousePos.Y - screenCenter.Y)
         end
-    end
-
-    -- 🎯 Affichage du FOV
-    if drawFOV then
-        FOVCircle.Position = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
-        FOVCircle.Visible = true
-    else
-        FOVCircle.Visible = false
     end
 end)
