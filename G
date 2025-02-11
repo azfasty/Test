@@ -7,109 +7,190 @@ if not Rayfield then
 end
 print("✅ Rayfield UI chargé avec succès !")
 
--- 📌 Création de la fenêtre principale
+-- 🔹 Clé d'accès au menu
 local Window = Rayfield:CreateWindow({
-    Name = "Emergency Hamburg",
-    LoadingTitle = "Hamburg Script 🔥 v1.0",
+    Name = "Rivals Aimbot",
+    LoadingTitle = "Rivals Aimbot v1.0",
     LoadingSubtitle = "By azfasty",
-    Theme = "Default",
-    ConfigurationSaving = {Enabled = false}
+    Theme = "Dark",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "RivalsConfig",
+        FileName = "AimbotSettings"
+    },
+    KeySystem = true,
+    KeySettings = {
+        Title = "Rivals Key System",
+        Subtitle = "Entrez votre clé pour accéder au menu",
+        Note = "Contactez le développeur pour obtenir une clé",
+        FileName = "RivalsKey",
+        SaveKey = true,
+        GrabKeyFromSite = false,
+        Key = {"RivalsAimbot123", "TestKey987"}  -- 🔑 Liste des clés valides
+    }
 })
 
--- 📌 Onglet Véhicule
-local VehicleTab = Window:CreateTab("Véhicule", "car")
+-- 🔹 Variables Aimbot & ESP
+local aimlock = false
+local alwaysLock = false
+local drawFOV = false
+local aimSmoothness = 5
+local aimFOV = 100
 
--- 🔹 Variables
-local speedBoostEnabled = false
-local boostMultiplier = 2  -- Par défaut, double la vitesse
-local originalSpeed = {}
+local espEnabled = false
+local boxEnabled = false
+local boneEnabled = false
+local lineEnabled = false
+local nameEnabled = false
 
--- ✅ Toggle pour activer/désactiver le Speed Boost
-VehicleTab:CreateToggle({
-    Name = "Activer Speed Boost",
+local fovColor = Color3.fromRGB(255, 255, 255)
+local espColor = Color3.fromRGB(255, 0, 0)
+
+-- 📌 Onglet AIMBOT
+local AimbotTab = Window:CreateTab("Aimbot", "crosshair")
+
+AimbotTab:CreateToggle({
+    Name = "Enable Aimbot",
     CurrentValue = false,
-    Flag = "SpeedBoost",
+    Flag = "Aimbot",
     Callback = function(state)
-        speedBoostEnabled = state
-        local player = game.Players.LocalPlayer
-        if player and player.Character and player.Character.Parent then
-            local vehicle = player.Character.Parent
-            if vehicle and vehicle:FindFirstChild("Engine") then
-                local engine = vehicle.Engine
-                if engine:FindFirstChild("MaxSpeed") then
-                    -- Sauvegarde de la vitesse de base
-                    if not originalSpeed[vehicle] then
-                        originalSpeed[vehicle] = engine.MaxSpeed.Value
-                    end
-                    
-                    if speedBoostEnabled then
-                        engine.MaxSpeed.Value = originalSpeed[vehicle] * boostMultiplier
-                    else
-                        engine.MaxSpeed.Value = originalSpeed[vehicle]
-                    end
-                end
-            end
-        end
+        aimlock = state
     end
 })
 
--- ✅ Slider pour régler la puissance du boost
-VehicleTab:CreateSlider({
-    Name = "Puissance du Boost",
-    Range = {1, 5},  -- De x1 à x5
-    Increment = 0.5,
-    CurrentValue = boostMultiplier,
-    Flag = "BoostMultiplier",
+AimbotTab:CreateToggle({
+    Name = "Always Lock (Mobile)",
+    CurrentValue = false,
+    Flag = "AlwaysLock",
+    Callback = function(state)
+        alwaysLock = state
+    end
+})
+
+AimbotTab:CreateToggle({
+    Name = "Draw FOV",
+    CurrentValue = false,
+    Flag = "DrawFOV",
+    Callback = function(state)
+        drawFOV = state
+    end
+})
+
+AimbotTab:CreateSlider({
+    Name = "FOV Size",
+    Range = {50, 300},
+    Increment = 5,
+    CurrentValue = aimFOV,
+    Flag = "FOVSize",
     Callback = function(value)
-        boostMultiplier = value
+        aimFOV = value
     end
 })
 
--- ✅ Bouton pour remettre la vitesse normale
-VehicleTab:CreateButton({
-    Name = "Réinitialiser la Vitesse",
+AimbotTab:CreateSlider({
+    Name = "Smoothness",
+    Range = {1, 20},
+    Increment = 1,
+    CurrentValue = aimSmoothness,
+    Flag = "Smoothness",
+    Callback = function(value)
+        aimSmoothness = value
+    end
+})
+
+AimbotTab:CreateColorPicker({
+    Name = "FOV Color",
+    Color = fovColor,
+    Flag = "FOVColor",
+    Callback = function(color)
+        fovColor = color
+    end
+})
+
+-- 📌 Onglet ESP
+local EspTab = Window:CreateTab("ESP", "eye")
+
+EspTab:CreateToggle({
+    Name = "Enable ESP",
+    CurrentValue = false,
+    Flag = "EnableESP",
+    Callback = function(state)
+        espEnabled = state
+    end
+})
+
+EspTab:CreateColorPicker({
+    Name = "ESP Color",
+    Color = espColor,
+    Flag = "ESPColor",
+    Callback = function(color)
+        espColor = color
+    end
+})
+
+-- 📌 Onglet MISC
+local MiscTab = Window:CreateTab("Misc", "tool")
+
+MiscTab:CreateButton({
+    Name = "Se téléporter au joueur le plus proche",
     Callback = function()
+        local closestPlayer = nil
+        local shortestDistance = math.huge
         local player = game.Players.LocalPlayer
-        if player and player.Character and player.Character.Parent then
-            local vehicle = player.Character.Parent
-            if vehicle and vehicle:FindFirstChild("Engine") then
-                local engine = vehicle.Engine
-                if engine:FindFirstChild("MaxSpeed") and originalSpeed[vehicle] then
-                    engine.MaxSpeed.Value = originalSpeed[vehicle]
+        local character = player.Character
+
+        if character and character:FindFirstChild("HumanoidRootPart") then
+            local rootPart = character.HumanoidRootPart
+
+            for _, p in pairs(game.Players:GetPlayers()) do
+                if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                    local distance = (p.Character.HumanoidRootPart.Position - rootPart.Position).magnitude
+                    if distance < shortestDistance then
+                        closestPlayer = p
+                        shortestDistance = distance
+                    end
                 end
+            end
+
+            if closestPlayer then
+                character.HumanoidRootPart.CFrame = closestPlayer.Character.HumanoidRootPart.CFrame
             end
         end
     end
 })
 
--- 📌 Onglet Crash Serveur
-local CrashTab = Window:CreateTab("Crash", "alert-triangle")
+-- 🎯 Aimbot avec WallChecker et DeadChecker
+local function getClosestTarget()
+    local closestTarget = nil
+    local shortestDistance = aimFOV
 
--- ✅ Bouton pour crasher le serveur
-CrashTab:CreateButton({
-    Name = "⚠️ CRASHER LE SERVEUR",
-    Callback = function()
-        while true do
-            -- 1️⃣ Spam des Remote Events pour surcharger le serveur
-            for _, v in pairs(game:GetDescendants()) do
-                if v:IsA("RemoteEvent") then
-                    v:FireServer()
-                end
+    for _, player in pairs(game:GetService("Players"):GetPlayers()) do
+        if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
+            -- ✅ DeadChecker : Ignorer les joueurs morts
+            if player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health <= 0 then
+                continue
             end
-            
-            -- 2️⃣ Création infinie d'objets pour surcharger la mémoire
-            local obj = Instance.new("Part")
-            obj.Parent = game.Workspace
-            obj.Size = Vector3.new(1000, 1000, 1000)
-            obj.Anchored = true
-            
-            -- 3️⃣ Téléportation rapide (le serveur ne suit plus)
-            local player = game.Players.LocalPlayer
-            if player and player.Character then
-                player.Character:SetPrimaryPartCFrame(player.Character:GetPrimaryPartCFrame() * CFrame.new(100, 0, 0))
+
+            -- ✅ WallChecker : Vérifie si un mur bloque la vue
+            local camera = workspace.CurrentCamera
+            local ray = Ray.new(camera.CFrame.Position, (player.Character.Head.Position - camera.CFrame.Position).unit * 500)
+            local hitPart, _ = workspace:FindPartOnRay(ray, game.Players.LocalPlayer.Character)
+
+            if hitPart and hitPart:IsDescendantOf(player.Character) then
+                local headPosition = camera:WorldToViewportPoint(player.Character.Head.Position)
+                local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+                local distance = (Vector2.new(headPosition.X, headPosition.Y) - screenCenter).Magnitude
+
+                if distance < shortestDistance then
+                    closestTarget = player
+                    shortestDistance = distance
+                end
             end
         end
     end
-})
 
-print("🔥 Speed Boost & Crash Serveur chargé avec succès !")
+    return closestTarget
+end
+
+-- ✅ Vérification du bon chargement
+print("🔥 Aimbot & ESP chargés avec Rayfield UI !")
