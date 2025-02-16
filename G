@@ -1,13 +1,17 @@
--- 📌 Chargement de Rayfield UI
-local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+-- 📌 Vérification du bon chargement de Rayfield UI
+local Rayfield
+local success, message = pcall(function()
+    Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+end)
 
-if not Rayfield then
-    warn("❌ Rayfield UI n'a pas pu être chargé !")
+if not success then
+    warn("❌ Échec du chargement de Rayfield UI: " .. message)
     return
 end
+
 print("✅ Rayfield UI chargé avec succès !")
 
--- 🔹 Variables principales
+-- 🔹 Services Roblox
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
@@ -15,7 +19,7 @@ local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
--- 🔹 Paramètres
+-- 🔹 Variables
 local aimActive = false
 local alwaysLock = false
 local drawFOV = false
@@ -25,18 +29,18 @@ local espEnabled = false
 local fovColor = Color3.fromRGB(255, 255, 255)
 local espColor = Color3.fromRGB(255, 0, 0)
 
--- 🎯 Création du FOV Drawing
+-- 🔹 Création du FOV Drawing
 local FOVCircle = Drawing.new("Circle")
 FOVCircle.Thickness = 2
 FOVCircle.NumSides = 50
 FOVCircle.Filled = false
 FOVCircle.Transparency = 1
 
--- 📌 ESP : Création des éléments Drawing
+-- 🔹 ESP : Création des éléments Drawing
 local ESPBoxes = {}
 local ESPNames = {}
 
--- 📌 Interface utilisateur
+-- 📌 Création de l'interface utilisateur
 local Window = Rayfield:CreateWindow({
     Name = "EH CHEAT de AZFASTY LE BG",
     Theme = "Darkblue",
@@ -53,8 +57,6 @@ AimbotTab:CreateToggle({
     CurrentValue = false,
     Callback = function(state) aimActive = state end
 })
-
-
 
 AimbotTab:CreateSlider({
     Name = "FOV Size",
@@ -120,7 +122,7 @@ RunService.RenderStepped:Connect(function()
                 local screenPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
 
                 if onScreen then
-                    -- Création du ESP
+                    -- Création de l'ESP Box
                     if not ESPBoxes[player] then
                         ESPBoxes[player] = Drawing.new("Square")
                         ESPBoxes[player].Thickness = 2
@@ -148,32 +150,53 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- 🎯 Aimbot avec correction Smooth
-local function getClosestTarget()
-    local closestTarget = nil
-    local closestDistance = aimFOV
+-- 📌 Onglet TELEPORT
+local TeleportTab = Window:CreateTab("Teleport", "rewind")
 
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
-            local head = player.Character.Head
-            local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
-
-            if onScreen then
-                local mousePos = UserInputService:GetMouseLocation()
-                local distance = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
-
-                if distance < closestDistance then
-                    closestTarget = player
-                    closestDistance = distance
-                end
+TeleportTab:CreateButton({
+    Name = "Teleport to Player",
+    Callback = function()
+        local targetPlayer = game.Players:GetPlayers()
+        if #targetPlayer > 1 then
+            local target = targetPlayer[2]
+            if target ~= LocalPlayer then
+                LocalPlayer.Character:MoveTo(target.Character.HumanoidRootPart.Position)
             end
         end
     end
+})
 
-    return closestTarget
-end
+TeleportTab:CreateButton({
+    Name = "Teleport Player to You",
+    Callback = function()
+        local targetPlayer = game.Players:GetPlayers()
+        if #targetPlayer > 1 then
+            local target = targetPlayer[2]
+            if target ~= LocalPlayer then
+                target.Character:MoveTo(LocalPlayer.Character.HumanoidRootPart.Position)
+            end
+        end
+    end
+})
 
--- 🎯 Aimbot Loop avec correction du Smooth 1
+-- 📌 Onglet SCRIPTS
+local ScriptsTab = Window:CreateTab("Scripts", "gear")
+
+ScriptsTab:CreateButton({
+    Name = "FOV Script",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Glockyori/fov/main/fovscript"))()
+    end
+})
+
+ScriptsTab:CreateButton({
+    Name = "Admin Script (Infinite Yield)",
+    Callback = function()
+        loadstring(game:HttpGet("https://pastebin.com/raw/WweihvrM"))()
+    end
+})
+
+-- 🎯 Aimbot Loop
 RunService.RenderStepped:Connect(function()
     if aimActive or alwaysLock then
         local target = getClosestTarget()
@@ -181,15 +204,10 @@ RunService.RenderStepped:Connect(function()
             local headPos = Camera:WorldToViewportPoint(target.Character.Head.Position)
             local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
-            local newMousePos = screenCenter
-            if aimSmoothness > 1 then
-                newMousePos = Vector2.new(
-                    screenCenter.X + (headPos.X - screenCenter.X) / aimSmoothness,
-                    screenCenter.Y + (headPos.Y - screenCenter.Y) / aimSmoothness
-                )
-            else
-                newMousePos = Vector2.new(headPos.X, headPos.Y)
-            end
+            local newMousePos = Vector2.new(
+                screenCenter.X + (headPos.X - screenCenter.X) / aimSmoothness,
+                screenCenter.Y + (headPos.Y - screenCenter.Y) / aimSmoothness
+            )
 
             mousemoverel(newMousePos.X - screenCenter.X, newMousePos.Y - screenCenter.Y)
         end
