@@ -38,11 +38,11 @@ local ESPNames = {}
 
 -- 📌 Interface utilisateur
 local Window = Rayfield:CreateWindow({
-    Name = "Rivals Aimbot",
-    Theme = "Dark",
+    Name = "EH CHEAT",
+    Theme = "Darkblue",
     ConfigurationSaving = {Enabled = true, FolderName = "RivalsConfig", FileName = "AimbotSettings"},
     KeySystem = true,
-    KeySettings = {Key = {"RivalsAimbot123", "TestKey987"}}
+    KeySettings = {Key = {"AZFASTY"}}
 })
 
 -- 📌 Onglet AIMBOT
