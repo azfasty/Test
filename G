@@ -38,7 +38,7 @@ local ESPNames = {}
 
 -- 📌 Interface utilisateur
 local Window = Rayfield:CreateWindow({
-    Name = "EH CHEAT",
+    Name = "EH CHEAT de AZFASTY LE BG",
     Theme = "Darkblue",
     ConfigurationSaving = {Enabled = true, FolderName = "RivalsConfig", FileName = "AimbotSettings"},
     KeySystem = true,
@@ -54,11 +54,7 @@ AimbotTab:CreateToggle({
     Callback = function(state) aimActive = state end
 })
 
-AimbotTab:CreateToggle({
-    Name = "Always Lock (Mobile)",
-    CurrentValue = false,
-    Callback = function(state) alwaysLock = state end
-})
+
 
 AimbotTab:CreateSlider({
     Name = "FOV Size",
