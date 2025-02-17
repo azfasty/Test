@@ -213,3 +213,13 @@ RunService.RenderStepped:Connect(function()
         end
     end
 end)
+
+-- 🎯 Mise à jour de la position du cercle de FOV
+RunService.RenderStepped:Connect(function()
+    if drawFOV then
+        local mousePos = UserInputService:GetMouseLocation()
+        FOVCircle.Position = mousePos
+    else
+        FOVCircle.Visible = false
+    end
+end)
